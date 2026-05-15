@@ -1,0 +1,3 @@
+{"ts":"2026-05-15T03:04:41.339Z","event":"session_started","host":"claude","source":"startup","sessionId":"2026-05-15T03-04-41-331Z-claude-6noytw"}
+{"ts":"2026-05-15T03:04:41.341Z","event":"session_injected","host":"claude","source":"startup","sessionId":"2026-05-15T03-04-41-338Z-claude-c1gk5c","details":{"bootstrapFile":"bootstrap.md","installMode":"standby","activatedProject":true}}
+{"ts":"2026-05-15T03:04:50.443Z","event":"semantic_route_prompted","host":"claude","source":"route","sessionId":"2026-05-15T03-04-41-338Z-claude-c1gk5c","recommendation":{"nextCommand":"build","nextPath":"~build -> ~verify","status":"in-progress","planName":"jump-rope-counter","summary":"当前活跃方案包 \"jump-rope-counter\" 仍有 15 个未完成任务。"}}

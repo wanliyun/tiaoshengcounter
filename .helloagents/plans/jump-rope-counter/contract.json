@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "source": "~prd",
+  "originCommand": "prd",
+  "verifyMode": "test-first",
+  "reviewerFocus": [
+    "计数算法峰谷检测逻辑的边界条件：连续跳跃、间歇停顿、快速小跳、大幅度慢跳",
+    "交替跳模式左右脚独立计数的去重判定",
+    "自动暂停/恢复的时序边界（5秒无跳跃判定）",
+    "相机权限拒绝、光线不足、存储不足等异常路径的降级行为"
+  ],
+  "testerFocus": [
+    "双脚跳计数准确率 ≥95%（3组 × 100次，手工对比验证）",
+    "交替跳计数准确率 ≥90%（3组 × 100次，手工对比验证）",
+    "中端机型推理帧率 ≥25 FPS（Android Profiler 测量）",
+    "连续 5 秒无跳跃后自动暂停、恢复跳跃后自动继续",
+    "离线运行：开启飞行模式后所有功能正常",
+    "各异常状态的 UI 展示与恢复"
+  ],
+  "ui": {
+    "required": true,
+    "designContract": true,
+    "sourcePriority": [
+      "prd/ui-ux.md",
+      "hello-ui"
+    ],
+    "styleAdvisor": {
+      "required": false,
+      "reason": ""
+    },
+    "visualValidation": {
+      "required": true,
+      "reason": "UI 涉及摄像头预览叠加 HUD 的实时动态布局，需在实际设备上验证各状态覆盖和视觉层级",
+      "screens": [
+        "MainScreen（全屏摄像头 + HUD 覆盖层）",
+        "HistoryScreen（列表 + 柱状统计图）",
+        "SettingsScreen（设置表单）"
+      ],
+      "states": [
+        "IDLE（未检测到人体）",
+        "READY（人体就绪）",
+        "COUNTING（计数中 + 数字弹跳动画）",
+        "PAUSED（暂停 + 半透明遮罩）",
+        "LOW_LIGHT（光线不足警告）",
+        "NO_PERSON（人体丢失闪烁提示）"
+      ]
+    }
+  },
+  "advisor": {
+    "required": false,
+    "reason": ""
+  }
+}

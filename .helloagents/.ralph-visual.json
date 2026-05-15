@@ -1,0 +1,18 @@
+{
+  "tooling": "代码级自检（无 Android 真机/模拟器环境）",
+  "screensChecked": [
+    "MainScreen（全屏摄像头 + HUD 覆盖层）",
+    "HistoryScreen（列表 + 柱状统计图）",
+    "SettingsScreen（设置表单）"
+  ],
+  "statesChecked": [
+    "IDLE — 引导文字 + 权限请求界面",
+    "READY — 自动从首次姿态检测触发",
+    "COUNTING — 中央计数器 + BPM 环 + 数字弹跳动画",
+    "PAUSED — 半透明遮罩 + 冻结数字 + 继续/结束按钮",
+    "LOW_LIGHT — 顶部黄色警告条（逻辑已就位）",
+    "NO_PERSON — 红色闪烁提示（逻辑已就位）"
+  ],
+  "status": "design_verified_code_only",
+  "summary": "所有 3 个 Screen、6 个状态均在代码中完整实现。颜色/排版/间距/圆角 token 已定义在 Color.kt / Type.kt / Theme.kt。动效使用 Compose spring 动画。需在真机上做最终视觉验收确认 CameraX 预览与 HUD 的实际叠加效果。"
+}
