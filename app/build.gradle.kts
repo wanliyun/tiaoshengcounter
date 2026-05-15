@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -7,6 +9,20 @@ plugins {
 android {
     namespace = "com.tiaosheng.counter"
     compileSdk = 34
+
+    val keystorePropsFile = rootProject.file("keystore.properties")
+    val releaseSigning = if (keystorePropsFile.exists()) {
+        val props = Properties()
+        props.load(keystorePropsFile.inputStream())
+        signingConfigs.create("release") {
+            storeFile = file(props["storeFile"] as String)
+            storePassword = props["storePassword"] as String
+            keyAlias = props["keyAlias"] as String
+            keyPassword = props["keyPassword"] as String
+        }
+    } else {
+        signingConfigs.getByName("debug")
+    }
 
     defaultConfig {
         applicationId = "com.tiaosheng.counter"
@@ -26,6 +42,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = releaseSigning
         }
     }
 

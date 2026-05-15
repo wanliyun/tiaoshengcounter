@@ -10,3 +10,6 @@
 local.properties
 /.helloagents/replay/
 app/build/
+/keystore.properties
+/tiaosheng.jks
+/release/
