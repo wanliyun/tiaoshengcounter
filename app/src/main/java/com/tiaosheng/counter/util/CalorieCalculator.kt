@@ -8,7 +8,7 @@ package com.tiaosheng.counter.util
 object CalorieCalculator {
 
     /** 跳绳 MET 值（中等速度 100-120 次/分钟） */
-    const val JUMP_ROPE_MET = 12.0
+    const val JUMP_ROPE_MET = 12.0f
 
     /**
      * @param totalJumps 有效跳跃次数
@@ -19,7 +19,7 @@ object CalorieCalculator {
     fun calculate(totalJumps: Int, weightKg: Float, durationSeconds: Int): Float {
         if (durationSeconds <= 0 || weightKg <= 0) return 0f
         val durationHours = durationSeconds / 3600f
-        return (JUMP_ROPE_MET * weightKg * durationHours).toFloat()
+        return JUMP_ROPE_MET * weightKg * durationHours
     }
 
     /**

@@ -89,7 +89,7 @@ class PoseEngine(private val lifecycleOwner: LifecycleOwner) {
         resultCallback = callback
 
         val mpImage = imageProxyToMPImage(imageProxy)
-        poseLandmarker?.detectAsync(mpImage, imageProxy.imageInfo.timestampMs)
+        poseLandmarker?.detectAsync(mpImage, imageProxy.imageInfo.timestamp)
     }
 
     private fun onResult(result: PoseLandmarkerResult) {

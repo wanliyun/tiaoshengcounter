@@ -15,10 +15,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.SwitchCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -73,6 +73,7 @@ fun MainScreen(
 
     val previewView = remember { PreviewView(context) }
     val cameraManager = remember { CameraManager(
+        context = context,
         lifecycleOwner = lifecycleOwner,
         previewView = previewView,
         onPoseResult = { result -> viewModel.onPoseResult(result) }
@@ -177,18 +178,18 @@ private fun BottomControls(
         verticalAlignment = Alignment.CenterVertically
     ) {
         ControlButton(
-            icon = Icons.Default.Cameraswitch,
+            icon = Icons.Filled.SwitchCamera,
             label = "翻转",
             onClick = onSwitchCamera
         )
         ControlButton(
-            icon = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+            icon = if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
             label = if (isPaused) "继续" else "暂停",
             onClick = onPauseResume,
             tint = if (isPaused) SportGreen else PauseYellow
         )
         ControlButton(
-            icon = Icons.Default.Stop,
+            icon = Icons.Filled.Stop,
             label = "结束",
             onClick = onStop,
             tint = ErrorRed

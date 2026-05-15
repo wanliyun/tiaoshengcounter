@@ -1,5 +1,6 @@
 package com.tiaosheng.counter.camera
 
+import android.content.Context
 import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -15,6 +16,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 
 class CameraManager(
+    private val context: Context,
     private val lifecycleOwner: LifecycleOwner,
     private val previewView: PreviewView,
     private val onPoseResult: (PoseEngine.PoseResult) -> Unit
@@ -25,7 +27,7 @@ class CameraManager(
 
     suspend fun start(): Result<Unit> = withContext(Dispatchers.Main) {
         try {
-            val provider = ProcessCameraProvider.await(lifecycleOwner)
+            val provider = getCameraProvider(context)
             cameraProvider = provider
             bindUseCases(provider)
             Result.success(Unit)
@@ -68,7 +70,7 @@ class CameraManager(
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .build()
             .also { analysis ->
-                analysis.setAnalyzer(ContextCompat.getMainExecutor(lifecycleOwner)) { imageProxy ->
+                analysis.setAnalyzer(ContextCompat.getMainExecutor(context)) { imageProxy ->
                     poseEngine.processFrame(imageProxy) { result ->
                         onPoseResult(result)
                     }
@@ -95,16 +97,12 @@ class CameraManager(
     }
 }
 
-private suspend fun ProcessCameraProvider.Companion.await(
-    owner: LifecycleOwner
-): ProcessCameraProvider = suspendCancellableCoroutine { cont ->
-    val listener = object : java.util.concurrent.Executor {
-        override fun execute(command: Runnable) = command.run()
+private suspend fun getCameraProvider(ctx: Context): ProcessCameraProvider =
+    suspendCancellableCoroutine { cont ->
+        val future = ProcessCameraProvider.getInstance(ctx)
+        future.addListener({
+            if (cont.isActive) {
+                cont.resume(future.get())
+            }
+        }, ContextCompat.getMainExecutor(ctx))
     }
-    val future = ProcessCameraProvider.getInstance(owner)
-    future.addListener({
-        if (cont.isActive) {
-            cont.resume(future.get())
-        }
-    }, ContextCompat.getMainExecutor(owner))
-}

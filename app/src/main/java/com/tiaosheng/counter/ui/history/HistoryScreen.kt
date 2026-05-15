@@ -71,9 +71,11 @@ fun HistoryScreen(
             containerColor = SurfaceDark,
             contentColor = SportOrange,
             indicator = { tabPositions ->
-                TabRowDefaults.SecondaryIndicator(
-                    color = SportOrange,
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[uiState.selectedTab.ordinal])
+                Box(
+                    Modifier
+                        .tabIndicatorOffset(tabPositions[uiState.selectedTab.ordinal])
+                        .height(3.dp)
+                        .background(SportOrange, RoundedCornerShape(topStart = 2.dp, topEnd = 2.dp))
                 )
             }
         ) {

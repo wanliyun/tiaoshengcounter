@@ -186,6 +186,7 @@ private fun StatusHint(state: DetectionState, isPaused: Boolean) {
         state == DetectionState.COUNTING -> ""
         state == DetectionState.PAUSED -> "已暂停"
         state == DetectionState.LOW_LIGHT -> "光线较暗，可能影响识别"
+        else -> ""
     }
     if (text.isNotEmpty()) {
         Text(
