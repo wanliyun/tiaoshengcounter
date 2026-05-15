@@ -34,12 +34,61 @@
 - 阴影：使用 Material 3 elevation tokens，克制使用
 
 ## 布局策略
-竖屏单栏布局，无横屏适配（本期不做）。摄像头预览全屏铺满 Safe Area，HUD 覆盖层分为：
-- 顶部状态栏区：计时器 + 模式标识
-- 中央核心区：当前次数（最大字号）+ BPM 环
+竖屏单栏布局，无横屏适配（本期不做）。导航流：
+```
+HOME → ModeConfigSheet → MainScreen(定时/定数) → HOME
+HOME → VideoCountingScreen → HOME
+HOME → HistoryScreen → HOME
+HOME → SettingsScreen → HOME
+```
+摄像头预览全屏铺满 Safe Area，HUD 覆盖层分为：
+- 顶部状态栏区：计时器/倒计时 + 模式标识 + BPM
+- 中央核心区：当前次数（最大字号）+ 进度环
 - 底部控制区：暂停/继续/结束按钮 + 模式切换
 
 ## 组件规范与交互模式
+
+### 首页 (HomeScreen)
+```
+┌─────────────────────────────────┐
+│                                 │
+│          跳绳计数                │  ← 36sp Bold
+│                                 │
+│  ┌──────────────────────────┐   │
+│  │  ⏱  定时模式              │   │  ← h=80dp 胶囊, SportOrange 背景
+│  │      设置时间，倒计时跳    │   │     左侧 Timer 图标
+│  └──────────────────────────┘   │
+│                                 │
+│  ┌──────────────────────────┐   │
+│  │  123  定数模式            │   │  ← h=80dp 胶囊, SportGreen 背景
+│  │       设定目标，跳完即停   │   │     左侧 FilterCenterFocus 图标
+│  └──────────────────────────┘   │
+│                                 │
+│  ┌──────────────────────────┐   │
+│  │  ▶  视频计数              │   │  ← h=80dp 胶囊, outlined 样式
+│  │      从视频文件识别次数    │   │     左侧 Videocam 图标
+│  └──────────────────────────┘   │
+│                                 │
+│       📋 历史记录  ⚙ 设置        │  ← TextButton, 底部
+└─────────────────────────────────┘
+```
+- 背景：SurfaceDark #1A1A2E 纯色底
+- 三个模式按钮等宽，h=80dp，间距 16dp
+- 定时/定数点击弹出 ModeConfigSheet，视频计数跳转 VideoCountingScreen
+
+### 模式配置面板 (ModeConfigSheet)
+- ModalBottomSheet，顶部圆角 24dp，skipPartiallyExpanded
+- 标题：定时设置 / 目标设置
+- 中央数值显示区：mm:ss 格式（定时）或纯数字（定数），字号 36-40sp Bold
+- 左右 +/- 圆形按钮（48dp，SportOrange 10% 透明底），步进 30s / 50 个
+- 数值可直接点击编辑（OutlinedTextField + Number 键盘），支持 mm:ss 解析
+- 快捷预设栏：定时 1分|2分|3分|5分，定数 100|200|500|1000
+- 底部"开始跳绳"大按钮，胶囊形，h=56dp
+
+### 视频计数页 (VideoCountingScreen)
+- 状态流转：IDLE（选择视频） → PROCESSING（进度条+已识别次数） → COMPLETED（结果卡片） → ERROR（错误提示+重试）
+- 结果卡片：大号次数+次，视频时长和平均 BPM 双列统计
+- 支持重新选择和返回首页
 
 ### 主界面 (MainScreen)
 ```

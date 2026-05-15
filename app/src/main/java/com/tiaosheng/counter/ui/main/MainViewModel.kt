@@ -3,6 +3,7 @@ package com.tiaosheng.counter.ui.main
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.tiaosheng.counter.ExerciseMode
 import com.tiaosheng.counter.counter.DetectionState
 import com.tiaosheng.counter.counter.JumpDetector
 import com.tiaosheng.counter.data.db.AppDatabase
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -42,7 +44,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val sensitivity: JumpDetector.Sensitivity = JumpDetector.Sensitivity.MEDIUM,
         val hasCameraError: Boolean = false,
         val hasPoseError: Boolean = false,
-        val isLowLight: Boolean = false
+        val isLowLight: Boolean = false,
+        val exerciseMode: ExerciseMode = ExerciseMode.Free,
+        val remainingSeconds: Int = 0,
+        val targetCount: Int = 0,
+        val isCompleted: Boolean = false
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -67,10 +73,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setExerciseMode(mode: ExerciseMode) {
+        _uiState.value = _uiState.value.copy(
+            exerciseMode = mode,
+            remainingSeconds = if (mode is ExerciseMode.Timed) mode.durationSeconds else 0,
+            targetCount = if (mode is ExerciseMode.Count) mode.targetCount else 0,
+            isCompleted = false
+        )
+    }
+
     fun onPoseResult(poseResult: PoseEngine.PoseResult) {
         val result = jumpDetector.processFrame(poseResult)
-
         val state = _uiState.value
+
+        // Auto-start timer when first entering COUNTING state
+        if (result.state == DetectionState.COUNTING &&
+            state.detectionState != DetectionState.COUNTING &&
+            !state.isPaused
+        ) {
+            startTimer()
+        }
+
         val newState = state.copy(
             detectionState = result.state,
             count = result.count,
@@ -79,6 +102,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         _uiState.value = newState
+
+        // Check auto-stop for count mode
+        val mode = state.exerciseMode
+        if (mode is ExerciseMode.Count && result.count >= mode.targetCount) {
+            ttsManager.speak("目标达成")
+            stop()
+            _uiState.value = _uiState.value.copy(isCompleted = true)
+            return
+        }
 
         // 语音播报
         if (voiceEnabled && result.state == DetectionState.COUNTING) {
@@ -141,7 +173,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         elapsedTimerJob?.cancel()
         sessionStartMs = 0L
         lastVoiceCount = 0
-        _uiState.value = UiState()
+        _uiState.value = UiState(
+            exerciseMode = _uiState.value.exerciseMode  // 保留模式设置
+        )
     }
 
     fun onCameraError() {
@@ -163,9 +197,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         elapsedTimerJob?.cancel()
         elapsedTimerJob = viewModelScope.launch {
             kotlinx.coroutines.delay(1000 - (System.currentTimeMillis() - sessionStartMs) % 1000)
-            while (true) {
+            while (isActive) {
                 val elapsed = ((System.currentTimeMillis() - sessionStartMs) / 1000).toInt()
-                _uiState.value = _uiState.value.copy(elapsedSeconds = elapsed)
+                val mode = _uiState.value.exerciseMode
+
+                if (mode is ExerciseMode.Timed) {
+                    val remaining = (mode.durationSeconds - elapsed).coerceAtLeast(0)
+                    _uiState.value = _uiState.value.copy(
+                        elapsedSeconds = elapsed,
+                        remainingSeconds = remaining
+                    )
+                    if (remaining <= 0) {
+                        stop()
+                        _uiState.value = _uiState.value.copy(isCompleted = true)
+                        return@launch
+                    }
+                } else {
+                    _uiState.value = _uiState.value.copy(elapsedSeconds = elapsed)
+                }
                 kotlinx.coroutines.delay(1000)
             }
         }

@@ -15,24 +15,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tiaosheng.counter.ExerciseMode
 import com.tiaosheng.counter.counter.DetectionState
 import com.tiaosheng.counter.ui.theme.CaptionHint
 import com.tiaosheng.counter.ui.theme.CounterDisplay
@@ -50,6 +48,10 @@ fun HudOverlay(
     calories: Float,
     elapsedSeconds: Int,
     isPaused: Boolean,
+    exerciseMode: ExerciseMode = ExerciseMode.Free,
+    remainingSeconds: Int = 0,
+    targetCount: Int = 0,
+    jumpModeLabel: String = "双脚跳",
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -71,7 +73,13 @@ fun HudOverlay(
             // 顶部状态栏
             TopStatusBar(
                 elapsedSeconds = elapsedSeconds,
-                mode = "双脚跳",
+                remainingSeconds = remainingSeconds,
+                exerciseMode = exerciseMode,
+                mode = when (exerciseMode) {
+                    is ExerciseMode.Timed -> "定时"
+                    is ExerciseMode.Count -> "定数"
+                    else -> jumpModeLabel
+                },
                 bpm = bpm
             )
 
@@ -81,7 +89,10 @@ fun HudOverlay(
             CenterCounter(
                 count = count,
                 bpm = bpm,
-                isCounting = state == DetectionState.COUNTING
+                isCounting = state == DetectionState.COUNTING,
+                exerciseMode = exerciseMode,
+                remainingSeconds = remainingSeconds,
+                targetCount = targetCount
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -92,6 +103,26 @@ fun HudOverlay(
                 style = CaptionHint,
                 color = TextDim
             )
+
+            // 定数模式进度条
+            if (exerciseMode is ExerciseMode.Count && targetCount > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = (count.toFloat() / targetCount).coerceIn(0f, 1f),
+                    modifier = Modifier
+                        .fillMaxWidth(0.6f)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp)),
+                    color = SportGreen,
+                    trackColor = SportGreen.copy(alpha = 0.2f),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$count / $targetCount",
+                    style = CaptionHint,
+                    color = TextDim
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -104,9 +135,16 @@ fun HudOverlay(
 @Composable
 private fun TopStatusBar(
     elapsedSeconds: Int,
+    remainingSeconds: Int,
+    exerciseMode: ExerciseMode,
     mode: String,
     bpm: Float
 ) {
+    val timeDisplay = when (exerciseMode) {
+        is ExerciseMode.Timed -> formatTime(remainingSeconds)
+        else -> formatTime(elapsedSeconds)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -117,7 +155,7 @@ private fun TopStatusBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = formatTime(elapsedSeconds),
+            text = timeDisplay,
             style = HeadlineStat,
             color = TextWhite
         )
@@ -140,7 +178,10 @@ private fun TopStatusBar(
 private fun CenterCounter(
     count: Int,
     bpm: Float,
-    isCounting: Boolean
+    isCounting: Boolean,
+    exerciseMode: ExerciseMode,
+    remainingSeconds: Int,
+    targetCount: Int
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isCounting) 1.0f else 0.95f,
@@ -148,17 +189,34 @@ private fun CenterCounter(
         label = "count_scale"
     )
 
+    // 计算进度环的 sweepAngle
+    val arcSweep: Float = when {
+        exerciseMode is ExerciseMode.Timed -> {
+            val duration = exerciseMode.durationSeconds
+            if (duration > 0) (remainingSeconds.toFloat() / duration) * 360f else 0f
+        }
+        exerciseMode is ExerciseMode.Count && targetCount > 0 -> {
+            (count.toFloat() / targetCount).coerceIn(0f, 1f) * 360f
+        }
+        else -> (bpm / 200f).coerceIn(0f, 1f) * 360f
+    }
+
+    val arcColor = when (exerciseMode) {
+        is ExerciseMode.Timed -> SportOrange
+        is ExerciseMode.Count -> SportGreen
+        else -> SportGreen
+    }
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(200.dp)
     ) {
-        // BPM 环
+        // 进度环
         Canvas(modifier = Modifier.size(200.dp)) {
-            val sweepAngle = (bpm / 200f).coerceIn(0f, 1f) * 360f
             drawArc(
-                color = SportGreen,
+                color = arcColor,
                 startAngle = -90f,
-                sweepAngle = sweepAngle,
+                sweepAngle = arcSweep,
                 useCenter = false,
                 style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
             )
@@ -173,6 +231,20 @@ private fun CenterCounter(
                 color = TextWhite,
                 textAlign = TextAlign.Center
             )
+            // 模式标签
+            when (exerciseMode) {
+                is ExerciseMode.Timed -> Text(
+                    text = "剩余 ${formatTime(remainingSeconds)}",
+                    style = CaptionHint,
+                    color = SportOrange
+                )
+                is ExerciseMode.Count -> Text(
+                    text = "目标 $targetCount",
+                    style = CaptionHint,
+                    color = SportGreen
+                )
+                else -> {}
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
@@ -37,11 +38,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.tiaosheng.counter.ExerciseMode
 import com.tiaosheng.counter.camera.CameraManager
 import com.tiaosheng.counter.counter.DetectionState
 import com.tiaosheng.counter.counter.JumpDetector
@@ -49,17 +52,23 @@ import com.tiaosheng.counter.ui.theme.ErrorRed
 import com.tiaosheng.counter.ui.theme.PauseYellow
 import com.tiaosheng.counter.ui.theme.SportGreen
 import com.tiaosheng.counter.ui.theme.SportOrange
+import com.tiaosheng.counter.ui.theme.TextDim
 import com.tiaosheng.counter.ui.theme.TextWhite
 
 @Composable
 fun MainScreen(
-    onNavigateToHistory: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {},
+    exerciseMode: ExerciseMode = ExerciseMode.Free,
+    onBack: () -> Unit = {},
+    onComplete: () -> Unit = {},
     viewModel: MainViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(exerciseMode) {
+        viewModel.setExerciseMode(exerciseMode)
+    }
 
     var hasCamPermission by remember {
         mutableStateOf(
@@ -80,12 +89,14 @@ fun MainScreen(
     }
 
     val previewView = remember { PreviewView(context) }
-    val cameraManager = remember { CameraManager(
-        context = context,
-        lifecycleOwner = lifecycleOwner,
-        previewView = previewView,
-        onPoseResult = { result -> viewModel.onPoseResult(result) }
-    ) }
+    val cameraManager = remember {
+        CameraManager(
+            context = context,
+            lifecycleOwner = lifecycleOwner,
+            previewView = previewView,
+            onPoseResult = { result -> viewModel.onPoseResult(result) }
+        )
+    }
 
     LaunchedEffect(hasCamPermission) {
         if (hasCamPermission) {
@@ -96,6 +107,13 @@ fun MainScreen(
     DisposableEffect(lifecycleOwner) {
         onDispose {
             cameraManager.stop()
+        }
+    }
+
+    // 自动返回首页（目标达成或时间到）
+    LaunchedEffect(uiState.isCompleted) {
+        if (uiState.isCompleted) {
+            onComplete()
         }
     }
 
@@ -113,8 +131,31 @@ fun MainScreen(
             bpm = uiState.bpm,
             calories = uiState.calories,
             elapsedSeconds = uiState.elapsedSeconds,
-            isPaused = uiState.isPaused
+            isPaused = uiState.isPaused,
+            exerciseMode = uiState.exerciseMode,
+            remainingSeconds = uiState.remainingSeconds,
+            targetCount = uiState.targetCount,
+            jumpModeLabel = if (uiState.jumpMode == JumpDetector.JumpMode.BOTH_FEET) "双脚跳" else "交替跳"
         )
+
+        // 返回按钮（非 FREE 模式显示）
+        if (exerciseMode != ExerciseMode.Free) {
+            IconButton(
+                onClick = {
+                    viewModel.stop()
+                    onBack()
+                },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 48.dp, start = 16.dp)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "返回",
+                    tint = TextWhite
+                )
+            }
+        }
 
         // Bottom controls
         if (uiState.detectionState != DetectionState.IDLE) {

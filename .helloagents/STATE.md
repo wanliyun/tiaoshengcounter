@@ -1,24 +1,23 @@
 # 恢复快照
 
 ## 主线目标
-为 Android 跳绳计数器 App 生成完整 PRD 文档集并完成全部代码实现（~build）。
+Android 跳绳计数器 App 完整实现，含首页模式选择、定时/定数/视频计数三种运动模式。
 
 ## 正在做什么
-~build 已完成。全部 15 个任务的代码已写入，方案包已补全。
+首页设计已完成。`./gradlew assembleDebug` 编译通过，零错误零警告。
 
 ## 关键上下文
 - 技术栈：Kotlin + Jetpack Compose + CameraX + MediaPipe BlazePose + Room
 - 包名：com.tiaosheng.counter，最低 API 26，目标 API 34
-- 共 39 个文件：Gradle 构建系统 + AndroidManifest + 17 个 Kotlin 源文件 + 2 个资源文件 + 12 个方案包文件
-- 方案包已补全：requirements.md + plan.md + prd/*.md (5) + tasks.md + decisions.md + contract.json
-- DESIGN.md 和 .ralph-visual.json 已创建
+- 模型文件 `pose_landmarker_lite.task` 已存在于 assets/
+- 首页新增 3 种运动模式入口：定时模式(倒计时)、定数模式(目标次数)、视频计数(从视频文件识别)
+- MainScreen 重构为支持 ExerciseMode 参数(FREE/TIMED/COUNT)
+- 视频计数使用 IMAGE 模式 PoseLandmarker + MediaMetadataRetriever 逐帧提取
+- 共新增 6 个文件，修改 4 个文件
 
 ## 下一步
-- **缺失**：`app/src/main/assets/pose_landmarker_lite.task` — MediaPipe BlazePose Lite 模型文件
-  需从 https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task 下载
-- Gradle wrapper 脚本：运行 `gradle wrapper` 生成 gradlew / gradlew.bat
-- 真机验证：T15 集成测试需要 Android 真机或模拟器环境执行
-- PRD 的 Could Have 功能未曾实现（目标设定、成就系统、背景音乐、暗色模式、桌面小组件）
+- 真机/模拟器验证：首页 UI 显示、模式配置面板、定时/定数自动结束、视频计数流程
+- Could Have 功能未曾实现（目标设定、成就系统、背景音乐、暗色模式、桌面小组件）
 
 ## 阻塞项
 （无）
