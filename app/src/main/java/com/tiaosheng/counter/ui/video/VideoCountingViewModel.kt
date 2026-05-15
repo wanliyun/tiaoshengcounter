@@ -49,30 +49,28 @@ class VideoCountingViewModel(application: Application) : AndroidViewModel(applic
         processingJob = viewModelScope.launch(Dispatchers.Default) {
             _uiState.value = _uiState.value.copy(phase = Phase.PROCESSING, progress = 0f, count = 0, error = null)
 
-            val context = getApplication<Application>()
-            val proc = VideoFrameProcessor(context, uri, targetFps = 15)
-            processor = proc
-            proc.open()
-
-            val landmarker = createPoseLandmarker(context)
-            if (landmarker.isFailure) {
-                _uiState.value = _uiState.value.copy(
-                    phase = Phase.ERROR,
-                    error = "模型初始化失败: ${landmarker.exceptionOrNull()?.message}"
-                )
-                proc.release()
-                return@launch
-            }
-            poseLandmarker = landmarker.getOrThrow()
-
-            val detector = JumpDetector()
-            val durationMs = proc.durationMs
-            val durationSec = (durationMs / 1000f)
-            val frameIntervalUs = (1_000_000L / 15) // 15fps
-
-            var processedFrames = 0
-
             try {
+                val context = getApplication<Application>()
+                val proc = VideoFrameProcessor(context, uri, targetFps = 15)
+                processor = proc
+                proc.open()
+
+                val durationMs = proc.durationMs
+                if (durationMs <= 0L) {
+                    throw IllegalStateException("无法读取视频时长")
+                }
+
+                val landmarker = createPoseLandmarker(context)
+                if (landmarker.isFailure) {
+                    throw IllegalStateException("模型初始化失败: ${landmarker.exceptionOrNull()?.message}")
+                }
+                poseLandmarker = landmarker.getOrThrow()
+
+                val detector = JumpDetector()
+                val durationSec = (durationMs / 1000f)
+                val frameIntervalUs = (1_000_000L / 15) // 15fps
+
+                var processedFrames = 0
                 var timeUs = 0L
                 while (isActive && timeUs < durationMs * 1000L) {
                     val bitmap = withContext(Dispatchers.IO) {
@@ -125,8 +123,10 @@ class VideoCountingViewModel(application: Application) : AndroidViewModel(applic
                     error = "处理出错: ${e.message}"
                 )
             } finally {
-                proc.release()
+                processor?.release()
+                processor = null
                 poseLandmarker?.close()
+                poseLandmarker = null
             }
         }
     }

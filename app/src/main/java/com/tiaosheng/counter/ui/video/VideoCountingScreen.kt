@@ -62,11 +62,13 @@ fun VideoCountingScreen(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            // 保留持久化读取权限
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
+            runCatching {
+                // 保留持久化读取权限；部分文件提供方不支持时直接忽略，避免选完视频闪退
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            }
             viewModel.startProcessing(uri)
         }
     }
