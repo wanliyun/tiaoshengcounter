@@ -14,3 +14,4 @@ app/build/
 /keystore.properties
 /tiaosheng.jks
 /release/
+__pycache__/
